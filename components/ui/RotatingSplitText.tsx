@@ -15,6 +15,7 @@ interface RotatingSplitTextProps {
   className?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const splitVariants = {
   hidden: {
     y: "100%",
@@ -69,7 +70,6 @@ export default function RotatingSplitText({
       <AnimatePresence mode="wait">
         <motion.span
           key={current}
-          variants={splitVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
