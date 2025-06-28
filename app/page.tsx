@@ -5,8 +5,6 @@ import ProjectsSection from "@/components/ProjectSection";
 import SkillsSection from "@/components/SkillsSection";
 import TaskProcedure from "@/components/TaskProcedureSection";
 import DockBar from "@/components/ui/DockBar";
-import { Contact } from "lucide-react";
-import Image from "next/image";
 
 export default function Home() {
   return (
