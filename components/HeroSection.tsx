@@ -104,8 +104,6 @@ export default function HeroSection() {
             <span style={{ color: accentCyan }}>
               <RotatingSplitText
                 texts={rotatingSplitTexts}
-                staggerDuration={0.1}
-                rotationInterval={3000}
                 className="inline-block capitalize"
               />
             </span>{" "}

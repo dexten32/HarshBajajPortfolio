@@ -24,7 +24,7 @@ const splitVariants = {
     y: 0,
     opacity: 1,
     transition: {
-      ease: "easeOut",
+      ease: "easeOut", // use a supported string value
       duration: 0.4,
     },
   },
