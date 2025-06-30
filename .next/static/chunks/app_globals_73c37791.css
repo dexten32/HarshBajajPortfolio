@@ -951,7 +951,15 @@
     }
   }
 
-  .bg-\[\#0D0D0D\], .bg-\[\#0d0d0d\] {
+  .bg-\[\#0D0D0D\] {
+    background-color: #0d0d0d;
+  }
+
+  .bg-\[\#0D0D0D\]\/90 {
+    background-color: oklab(15.9066% 7.45058e-9 0 / .9);
+  }
+
+  .bg-\[\#0d0d0d\] {
     background-color: #0d0d0d;
   }
 
@@ -969,6 +977,26 @@
 
   .bg-black {
     background-color: var(--color-black);
+  }
+
+  .bg-black\/50 {
+    background-color: #00000080;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .bg-black\/50 {
+      background-color: color-mix(in oklab, var(--color-black) 50%, transparent);
+    }
+  }
+
+  .bg-black\/80 {
+    background-color: #000c;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .bg-black\/80 {
+      background-color: color-mix(in oklab, var(--color-black) 80%, transparent);
+    }
   }
 
   .bg-white {
@@ -1673,6 +1701,18 @@
   }
 
   @media (width >= 40rem) {
+    .sm\:bg-black\/50 {
+      background-color: #00000080;
+    }
+
+    @supports (color: color-mix(in lab, red, red)) {
+      .sm\:bg-black\/50 {
+        background-color: color-mix(in oklab, var(--color-black) 50%, transparent);
+      }
+    }
+  }
+
+  @media (width >= 40rem) {
     .sm\:px-8 {
       padding-inline: calc(var(--spacing) * 8);
     }
@@ -1946,6 +1986,18 @@
   }
 
   @media (width >= 48rem) {
+    .md\:bg-white\/5 {
+      background-color: #ffffff0d;
+    }
+
+    @supports (color: color-mix(in lab, red, red)) {
+      .md\:bg-white\/5 {
+        background-color: color-mix(in oklab, var(--color-white) 5%, transparent);
+      }
+    }
+  }
+
+  @media (width >= 48rem) {
     .md\:px-12 {
       padding-inline: calc(var(--spacing) * 12);
     }
@@ -1960,6 +2012,12 @@
   @media (width >= 48rem) {
     .md\:pt-0 {
       padding-top: calc(var(--spacing) * 0);
+    }
+  }
+
+  @media (width >= 48rem) {
+    .md\:pr-3 {
+      padding-right: calc(var(--spacing) * 3);
     }
   }
 

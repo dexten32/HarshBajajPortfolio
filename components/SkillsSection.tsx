@@ -127,7 +127,6 @@ export default function SkillsSection() {
   }, [currentMaxBallRadius]); // Dependency for currentMaxBallRadius
 
   // Effect to detect screen size and set breakpoint state
-  // This needs to run independently and update `isMobileBreakpoint`
   useEffect(() => {
     const checkBreakpoint = () => {
       // Assuming 'md' breakpoint is 768px in Tailwind (common default)

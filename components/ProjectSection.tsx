@@ -8,15 +8,8 @@ export default function ProjectsSection() {
   const accentCyan = "#9EFFFF";
   return (
     <section className="w-full px-4 py-16 sm:px-8 sm:py-20 lg:px-20 lg:py-20 bg-[#0D0D0D] text-white flex justify-center">
-      {/* Main Grid Container:
-          - On mobile (default), it's a single column (grid-cols-1).
-          - On medium screens (md) and up, it becomes two columns (md:grid-cols-2). */}
       <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-2 md:gap-[15rem] gap-10">
-        {/* --- SECTION HEADER & DESCRIPTION --- */}
-        {/* This block is first in the HTML.
-            - On mobile: It appears at the top (due to grid-cols-1).
-            - On desktop: `md:order-2` moves it to the right column. */}
-        <div className="flex flex-col justify-center space-y-4 pr-2 md:pr-4 md:order-2">
+        <div className="flex flex-col justify-center space-y-4 pr-2 md:pr-3 md:order-2">
           {" "}
           {/* Added md:order-2 */}
           <Reveal delay={0}>
@@ -58,13 +51,8 @@ export default function ProjectsSection() {
           </Reveal>
         </div>
 
-        {/* --- PROJECT CARDS CONTAINER --- */}
-        {/* This block is second in the HTML.
-            - On mobile: It appears below the header/description.
-            - On desktop: `md:order-1` moves it to the left column. */}
         <div className="space-y-12 relative md:order-1">
           {" "}
-          {/* Added md:order-1 */}
           {/* Project 1 */}
           <Reveal delay={0}>
             <div className="transform md:translate-x-0">

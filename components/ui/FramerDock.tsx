@@ -212,7 +212,7 @@ export default function Dock({
         // COLOR SCHEME (maintained from previous request)
         className={`${className} absolute bottom-5 left-1/2 transform -translate-x-1/2
                     flex items-end w-fit gap-4 rounded-2xl
-                    border-neutral-300 bg-white/5 border border-white/10 
+                    border-neutral-300 md:bg-white/5 bg-[#0D0D0D]/90 border border-white/10 
   shadow-[0_4px_30px_rgba(0,0,0,0.1)]
   rounded-full px-6 py-3 pb-2 px-4 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-300`} // Reverted padding and direction
         style={{ height: panelHeight }} // Reverted to height
