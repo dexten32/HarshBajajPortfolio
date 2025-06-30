@@ -10,7 +10,7 @@ export default function ContactSection() {
       className="w-full bg-[#0D0D0D] flex flex-col items-center justify-center px-6 pt-12 pb-0"
     >
       {/* CONTACT CONTAINER */}
-      <div className="w-full max-w-[1440px] bg-white/5 rounded-3xl p-12 transition-all duration-500">
+      <div className="w-full max-w-[1440px] bg-white/5 rounded-3xl p-4 py-8 transition-all duration-500">
         <div className="flex flex-col items-center justify-center h-full w-full space-y-8">
           {/* Subtext */}
           <Reveal>
@@ -21,8 +21,8 @@ export default function ContactSection() {
 
           {/* Heading */}
           <RevealSplitText
-            text="Let’s create the next big idea"
-            className="text-4xl md:text-5xl font-extrabold text-white text-center max-w-3xl"
+            text="Let’s create the next big idea" // Changed to regular space
+            className="text-2xl uppercase md:text-5xl font-extrabold text-white text-center max-w-lg sm:max-w-xl md:max-w-4xl"
           />
 
           {/* CTA Button */}
@@ -38,7 +38,7 @@ export default function ContactSection() {
               <span className="absolute inset-0 w-full h-full bg-white scale-x-0 group-hover:scale-x-100 group-hover:rounded-[10rem] transition-transform duration-500 ease-out origin-left"></span>
 
               <a href="mailto:harshbajaj544@gmail.com">
-                <span className="relative z-10 group-hover:text-black transition-colors duration-500 text-xl">
+                <span className="relative z-10 group-hover:text-black transition-colors duration-500 text-xs md:text-xl ">
                   <span className="group-hover:hidden">Write a Message</span>
                   <span className="hidden group-hover:inline">
                     Write a Message

@@ -22,9 +22,9 @@ const steps = [
         className="size-5"
       >
         <path
-          fill-rule="evenodd"
+          fillRule="evenodd"
           d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75ZM4.117 19.125a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75v-.008Z"
-          clip-rule="evenodd"
+          clipRule="evenodd"
         />
       </svg>
     ),
@@ -123,25 +123,21 @@ const steps = [
 
 export default function TaskProcedure() {
   const horizontalSectionRef = useRef<HTMLElement | null>(null);
-  // This ref is for the *viewport* div that will have overflow-hidden
   const scrollContainerWrapperRef = useRef<HTMLDivElement | null>(null);
-  // This ref is for the *inner* flex container that holds the cards and will be translated
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const sectionHeaderRef = useRef<HTMLDivElement | null>(null);
   const taskFlowSpanRef = useRef<HTMLSpanElement | null>(null);
   const howICompleteTasksH2Ref = useRef<HTMLHeadingElement | null>(null);
 
-  // State for mouse drag functionality
   const [isDown, setIsDown] = useState(false);
   const [startX, setStartX] = useState(0);
-  const prevScrollX = useRef(0); // Stores the X position of the inner container when drag starts
+  const prevScrollX = useRef(0);
 
-  // Store dimensions that affect scroll calculation
   const dimensions = useRef({
     totalContentWidth: 0,
     viewportWidth: 0,
-    maxScrollX: 0, // Maximum negative X translation allowed
+    maxScrollX: 0,
   });
 
   // Effect for header animation (remains the same)
@@ -175,82 +171,96 @@ export default function TaskProcedure() {
     return () => ctx.revert();
   }, []);
 
-  // Effect for mouse drag functionality
+  // Effect for mouse and touch drag functionality
   useEffect(() => {
-    const slider = scrollContainerRef.current; // The content to be dragged
-    const wrapper = scrollContainerWrapperRef.current; // The viewport
+    const slider = scrollContainerRef.current;
+    const wrapper = scrollContainerWrapperRef.current;
 
     if (!slider || !wrapper) return;
 
-    // --- Helper function to update dimensions ---
     const updateDimensions = () => {
-      dimensions.current.totalContentWidth = slider.scrollWidth; // Total width of flex items
-      dimensions.current.viewportWidth = wrapper.offsetWidth; // Visible width of the viewport
-      // maxScrollX is the amount we need to translate left (negative X)
-      // It's the total content width minus the visible viewport width.
+      dimensions.current.totalContentWidth = slider.scrollWidth;
+      dimensions.current.viewportWidth = wrapper.offsetWidth;
       dimensions.current.maxScrollX = Math.max(
         0,
         dimensions.current.totalContentWidth - dimensions.current.viewportWidth
       );
-      // console.log("Dimensions updated:", dimensions.current);
 
-      // Adjust current X position if it goes beyond new bounds on resize
       const currentX = gsap.getProperty(slider, "x") as number;
-      // Clamp the current X to prevent it from going too far left or right
       const clampedX = Math.max(
-        -dimensions.current.maxScrollX, // Furthest left (negative value)
-        Math.min(0, currentX) // Furthest right (0 or positive value)
+        -dimensions.current.maxScrollX,
+        Math.min(0, currentX)
       );
       if (currentX !== clampedX) {
         gsap.to(slider, { x: clampedX, duration: 0.3, ease: "power1.out" });
       }
     };
 
-    // Update dimensions on mount and whenever the window resizes or ScrollTrigger refreshes
     updateDimensions();
     const handleResize = () => updateDimensions();
     window.addEventListener("resize", handleResize);
-    ScrollTrigger.addEventListener("refreshInit", updateDimensions); // For GSAP context refreshes
 
-    // --- Mouse Event Handlers ---
-    const handleMouseDown = (e: MouseEvent) => {
+    // --- Unified Drag Logic ---
+    const startDrag = (pageX: number) => {
       setIsDown(true);
-      wrapper.classList.add("active-grab"); // Add class for 'grabbing' cursor
-      setStartX(e.pageX); // Record initial mouse X position
-      // Record the current X transform of the slider (important for cumulative drag)
+      wrapper.classList.add("active-grab");
+      setStartX(pageX);
       prevScrollX.current = gsap.getProperty(slider, "x") as number;
     };
 
-    const handleMouseLeave = () => {
+    const endDrag = () => {
       setIsDown(false);
       wrapper.classList.remove("active-grab");
+    };
+
+    const duringDrag = (pageX: number) => {
+      if (!isDown) return;
+
+      const dragDistance = pageX - startX;
+      const sensitivity = 1.5;
+      const walk = dragDistance * sensitivity;
+
+      let newX = prevScrollX.current + walk;
+      newX = Math.max(-dimensions.current.maxScrollX, Math.min(0, newX));
+
+      gsap.to(slider, { x: newX, duration: 0.1, ease: "power1.out" });
+    };
+
+    // --- Mouse Event Handlers ---
+    const handleMouseDown = (e: MouseEvent) => {
+      e.preventDefault(); // Prevent text selection on desktop
+      startDrag(e.pageX);
+    };
+
+    const handleMouseLeave = () => {
+      if (isDown) endDrag();
     };
 
     const handleMouseUp = () => {
-      setIsDown(false);
-      wrapper.classList.remove("active-grab");
+      endDrag();
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDown) return;
-      e.preventDefault(); // Prevent text selection and other default browser drag behaviors
+      duringDrag(e.pageX);
+    };
 
-      const x = e.pageX;
-      const dragDistance = x - startX; // How much the mouse has moved since start
-      const sensitivity = 1.5; // Adjust this to control how fast cards move (higher = faster)
-      const walk = dragDistance * sensitivity;
+    // --- Touch Event Handlers ---
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        e.preventDefault(); // <--- Crucial: Prevent default vertical scrolling
+        startDrag(e.touches[0].pageX);
+      }
+    };
 
-      // Calculate the new X position for the slider
-      // It's the X at the start of the drag PLUS the 'walk' distance.
-      let newX = prevScrollX.current + walk;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        e.preventDefault(); // <--- Crucial: Prevent default vertical scrolling during drag
+        duringDrag(e.touches[0].pageX);
+      }
+    };
 
-      // Clamp the newX value to ensure it stays within bounds
-      // Cannot go further left than -maxScrollX
-      // Cannot go further right than 0
-      newX = Math.max(-dimensions.current.maxScrollX, Math.min(0, newX));
-
-      // Use GSAP to animate the X property for smooth movement
-      gsap.to(slider, { x: newX, duration: 0.1, ease: "power1.out" });
+    const handleTouchEnd = () => {
+      endDrag();
     };
 
     // --- Attach Event Listeners ---
@@ -259,16 +269,27 @@ export default function TaskProcedure() {
     wrapper.addEventListener("mouseup", handleMouseUp);
     wrapper.addEventListener("mousemove", handleMouseMove);
 
+    // Removed { passive: true } from touchstart and touchmove
+    wrapper.addEventListener("touchstart", handleTouchStart);
+    wrapper.addEventListener("touchmove", handleTouchMove);
+    wrapper.addEventListener("touchend", handleTouchEnd);
+    wrapper.addEventListener("touchcancel", handleTouchEnd);
+
     // --- Cleanup Listeners ---
     return () => {
       wrapper.removeEventListener("mousedown", handleMouseDown);
       wrapper.removeEventListener("mouseleave", handleMouseLeave);
       wrapper.removeEventListener("mouseup", handleMouseUp);
       wrapper.removeEventListener("mousemove", handleMouseMove);
+
+      wrapper.removeEventListener("touchstart", handleTouchStart);
+      wrapper.removeEventListener("touchmove", handleTouchMove);
+      wrapper.removeEventListener("touchend", handleTouchEnd);
+      wrapper.removeEventListener("touchcancel", handleTouchEnd);
+
       window.removeEventListener("resize", handleResize);
-      ScrollTrigger.removeEventListener("refreshInit", updateDimensions);
     };
-  }, [isDown, startX]); // Dependencies: Re-run effect if isDown or startX change
+  }, [isDown, startX]);
 
   return (
     <section
@@ -276,7 +297,8 @@ export default function TaskProcedure() {
       className="w-full px-6 py-10 bg-[#0d0d0d] text-white relative"
       style={{ minHeight: "500px" }}
     >
-      <div className="max-w-6xl mx-auto">
+      {/* Updated: Container size for mobile */}
+      <div className="max-w-xl mx-auto md:max-w-6xl">
         {/* Section Header */}
         <div className="mb-10" ref={sectionHeaderRef}>
           <Reveal delay={0}>
@@ -289,13 +311,13 @@ export default function TaskProcedure() {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke-width="1.5"
+                strokeWidth="1.5"
                 stroke="#9EFFFF"
                 className="size-4"
               >
                 <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"
                 />
               </svg>{" "}
@@ -304,27 +326,26 @@ export default function TaskProcedure() {
           </Reveal>
           <RevealSplitText
             text="How I Complete Tasks"
-            className="text-4xl md:text-5xl font-extrabold mt-2"
+            className="text-2xl md:text-5xl font-extrabold mt-2"
           />
         </div>
 
         {/* Horizontal Scrollable Cards Container */}
-        {/* This div acts as the fixed-width viewport. It will hide content that overflows. */}
         <div
           ref={scrollContainerWrapperRef}
-          className="overflow-hidden cursor-grab unselectable relative" // Added unselectable and relative for positioning context
-          style={{ width: "100%" }} // Ensure it takes full width of its parent (max-w-6xl)
+          // Added touch-action: pan-y to allow vertical scroll while enabling horizontal drag
+          className="overflow-hidden cursor-grab unselectable relative"
+          style={{ width: "100%", touchAction: "pan-y" }}
         >
-          {/* This div holds all the cards and will be translated horizontally */}
           <div
             ref={scrollContainerRef}
-            className="flex gap-6 pb-2 shrink-0 w-fit" // w-fit makes it as wide as its content
-            style={{ willChange: "transform" }} // Optimization hint for animations
+            className="flex gap-6 pb-2 shrink-0 w-fit"
+            style={{ willChange: "transform" }}
           >
             {steps.map((step) => (
               <div
                 key={step.step}
-                className="min-w-[260px] max-w-xs bg-white/5 border border-white/10 rounded-2xl p-6 shrink-0 hover:bg-white/10 transition"
+                className="w-[85vw] max-w-sm sm:min-w-[260px] sm:max-w-xs bg-white/5 border border-white/10 rounded-2xl p-6 shrink-0 hover:bg-white/10 transition"
               >
                 {/* Icon inside circle */}
                 <div className="w-12 h-12 rounded-full bg-[#9EFFFF]/80 flex items-center justify-center mb-4">

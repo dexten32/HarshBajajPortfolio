@@ -14,7 +14,7 @@ import Matter, {
 } from "matter-js";
 import Reveal from "./ui/Reveal";
 import RevealSplitText from "./ui/RevealSplitText";
-import { color, motion } from "framer-motion"; // Import motion
+import { motion } from "framer-motion";
 
 const skills = [
   "HTML",
@@ -47,12 +47,7 @@ interface BallRenderData {
   radius: number;
 }
 
-const getTextWidth = (
-  text: string,
-  font: string,
-  p0: { fontSize: string },
-  p1: number
-): number => {
+const getTextWidth = (text: string, font: string): number => {
   if (typeof document === "undefined") return text.length * 10;
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
@@ -65,9 +60,8 @@ const getTextWidth = (
 
 export default function SkillsSection() {
   const gravity = 1.5;
-  const wireframes = false; // KEEP THIS TRUE FOR DEBUGGING
+  const wireframes = false; // Set to true for debugging Matter.js physics outlines
   const mouseConstraintStiffness = 0.02;
-  const fontSize = "1rem";
 
   const ballBorderColor = "#ffffff";
   const textColor = "#ffffff";
@@ -82,11 +76,32 @@ export default function SkillsSection() {
   const matterBodiesRef = useRef<Matter.Body[]>([]);
   const currentSkillsIndex = useRef(0);
   const spawnIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
-  const currentBoundariesRef = useRef<Matter.Body[]>([]);
-  const [initialized, setInitialized] = useState(false);
 
   // State to manage hover color for each skill item
   const [hoverColors, setHoverColors] = useState<{ [key: string]: string }>({});
+
+  // State to track if we are on a mobile breakpoint
+  const [isMobileBreakpoint, setIsMobileBreakpoint] = useState(false);
+
+  // Define responsive radius values
+  const mobileMinBallRadius = 30; // Smaller radius for mobile
+  const mobileMaxBallRadius = 50; // Smaller radius for mobile
+
+  const desktopMinBallRadius = 60; // Original larger radius for desktop
+  const desktopMaxBallRadius = 90; // Original larger radius for desktop
+
+  // Define responsive font sizes
+  const mobileFontSize = "0.75rem"; // Smaller font for mobile
+  const desktopFontSize = "1rem"; // Original font for desktop
+
+  // Dynamically determine current radius and font size based on breakpoint
+  const currentMinBallRadius = isMobileBreakpoint
+    ? mobileMinBallRadius
+    : desktopMinBallRadius;
+  const currentMaxBallRadius = isMobileBreakpoint
+    ? mobileMaxBallRadius
+    : desktopMaxBallRadius;
+  const currentFontSize = isMobileBreakpoint ? mobileFontSize : desktopFontSize;
 
   type CustomMatterBody = Matter.Body & {
     originalProps?: { label?: string; radius?: number };
@@ -102,30 +117,68 @@ export default function SkillsSection() {
           x: body.position.x,
           y: body.position.y,
           rotation: body.angle,
-          radius: originalProps.radius || 40,
+          radius: originalProps.radius || currentMaxBallRadius, // Fallback to currentMaxBallRadius if originalProps.radius is missing
         };
       });
       setBallRenderData(newRenderData);
     } else {
       setBallRenderData([]);
     }
-  }, []);
+  }, [currentMaxBallRadius]); // Dependency for currentMaxBallRadius
 
+  // Effect to detect screen size and set breakpoint state
+  // This needs to run independently and update `isMobileBreakpoint`
   useEffect(() => {
-    const waitUntilVisible = () => {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (rect && rect.top < window.innerHeight && rect.bottom > 0) {
-        setInitialized(true);
-      } else {
-        requestAnimationFrame(waitUntilVisible);
-      }
+    const checkBreakpoint = () => {
+      // Assuming 'md' breakpoint is 768px in Tailwind (common default)
+      setIsMobileBreakpoint(window.innerWidth < 768);
     };
-    waitUntilVisible();
-  }, []);
+    checkBreakpoint(); // Initial check on mount
+    window.addEventListener("resize", checkBreakpoint);
+    return () => window.removeEventListener("resize", checkBreakpoint);
+  }, []); // Empty dependency array ensures this runs once and cleans up on unmount
 
+  // Main Matter.js initialization and simulation useEffect
   useEffect(() => {
-    if (!initialized || !containerRef.current || !canvasRef.current) return;
+    // Only proceed if both container and canvas refs are available
+    if (!containerRef.current || !canvasRef.current) {
+      // console.log("Matter.js setup skipped: Refs not ready.");
+      return;
+    }
 
+    // --- CLEANUP OF PREVIOUS INSTANCE (if any) ---
+    // This runs on component unmount or when dependencies change, ensuring a clean reset.
+    const cleanupMatter = () => {
+      // console.log("Cleaning up Matter.js...");
+      if (spawnIntervalIdRef.current) {
+        clearInterval(spawnIntervalIdRef.current);
+        spawnIntervalIdRef.current = null;
+      }
+      if (runnerRef.current) {
+        Runner.stop(runnerRef.current);
+        runnerRef.current = null;
+      }
+      if (renderRef.current) {
+        Render.stop(renderRef.current);
+        renderRef.current = null;
+      }
+      if (engineRef.current) {
+        Events.off(engineRef.current, "afterUpdate", updateRenderData);
+        World.clear(engineRef.current.world, true);
+        Engine.clear(engineRef.current);
+        engineRef.current = null;
+      }
+      matterBodiesRef.current = [];
+      setBallRenderData([]); // Clear displayed balls
+      currentSkillsIndex.current = 0; // Reset skill index for new spawn
+      // console.log("Matter.js cleanup complete.");
+    };
+
+    // Perform cleanup before setting up a new instance
+    cleanupMatter(); // Call cleanup directly here before setting up
+
+    // --- MATTER.JS SETUP ---
+    // console.log("Setting up Matter.js...");
     const width = containerRef.current.offsetWidth;
     const height = containerRef.current.offsetHeight;
 
@@ -164,7 +217,7 @@ export default function SkillsSection() {
     });
     World.add(engine.world, mouseConstraint);
 
-    const boundaryThickness = 100;
+    const boundaryThickness = 100; // Thickness of the invisible boundary walls
     const boundaryOptions = {
       isStatic: true,
       restitution: 0.8,
@@ -177,42 +230,43 @@ export default function SkillsSection() {
       },
     };
 
+    // Define boundaries based on container size
     const boundaries = [
+      // Bottom Boundary (slightly below the visible container to catch balls)
       Bodies.rectangle(
         width / 2,
-        height - boundaryThickness / 6 + 60,
+        height + boundaryThickness / 2, // Center of boundary is just below container bottom
         width,
         boundaryThickness,
         boundaryOptions
       ),
-
+      // Left Boundary
       Bodies.rectangle(
-        -50,
+        -(boundaryThickness / 2), // Center of boundary is just left of container left
         height / 2,
         boundaryThickness,
         height,
         boundaryOptions
       ),
+      // Right Boundary
       Bodies.rectangle(
-        width + 50,
+        width + boundaryThickness / 2, // Center of boundary is just right of container right
         height / 2,
         boundaryThickness,
         height,
         boundaryOptions
       ),
+      // Top Boundary (slightly above the visible container)
       Bodies.rectangle(
         width / 2,
-        -50,
+        -(boundaryThickness / 2), // Center of boundary is just above container top
         width,
         boundaryThickness,
         boundaryOptions
       ),
     ];
     World.add(engine.world, boundaries);
-    currentBoundariesRef.current = boundaries;
 
-    const minBallRadius = 60;
-    const maxBallRadius = 90;
     const spawnHeightAboveContainer = 50;
 
     const addBall = () => {
@@ -221,15 +275,15 @@ export default function SkillsSection() {
       const skill = skills[currentSkillsIndex.current];
       const estimatedTextWidth = getTextWidth(
         skill,
-        `${fontSize} sans-serif`,
-        { fontSize },
-        0
+        `${currentFontSize} sans-serif`
       );
+
+      // Use the dynamically calculated min/max radii
       const radius = Math.max(
-        minBallRadius,
-        Math.min(maxBallRadius, estimatedTextWidth / 2 + 20)
+        currentMinBallRadius,
+        Math.min(currentMaxBallRadius, estimatedTextWidth / 2 + 20)
       );
-      const x = Math.random() * (width - radius * 2) + radius;
+      const x = Math.random() * (width - radius * 2) + radius; // Spawn within visible width
       const y = -spawnHeightAboveContainer;
 
       const ball = Bodies.circle(x, y, radius, {
@@ -238,7 +292,7 @@ export default function SkillsSection() {
         label: skill,
         render: { visible: wireframes },
       }) as CustomMatterBody;
-      ball.originalProps = { label: skill, radius };
+      ball.originalProps = { label: skill, radius }; // Store the actual physics radius
       Matter.Body.setVelocity(ball, {
         x: (Math.random() - 0.5) * 3,
         y: Math.random() * 2,
@@ -248,37 +302,38 @@ export default function SkillsSection() {
       currentSkillsIndex.current++;
     };
 
+    // Start spawning balls after a short delay for initial setup
     spawnIntervalIdRef.current = setInterval(() => {
       if (currentSkillsIndex.current >= skills.length) {
-        clearInterval(spawnIntervalIdRef.current!);
+        if (spawnIntervalIdRef.current)
+          clearInterval(spawnIntervalIdRef.current);
         return;
       }
       addBall();
     }, 200);
 
+    // Attach event listener for updating render data
     Events.on(engine, "afterUpdate", updateRenderData);
+    // console.log("Matter.js setup complete.");
 
+    // Cleanup function: This is essential for component unmount
     return () => {
-      if (spawnIntervalIdRef.current) clearInterval(spawnIntervalIdRef.current);
-      if (runnerRef.current) Runner.stop(runnerRef.current);
-      if (renderRef.current) Render.stop(renderRef.current);
-      Events.off(engine, "afterUpdate", updateRenderData);
-      if (engineRef.current) {
-        World.clear(engineRef.current.world, true);
-        Engine.clear(engineRef.current);
-      }
-      matterBodiesRef.current = [];
-      setBallRenderData([]);
-      currentSkillsIndex.current = 0;
-      setInitialized(false);
+      cleanupMatter();
     };
-  }, [initialized, updateRenderData]);
+  }, [
+    // Dependencies that cause the Matter.js simulation to re-setup
+    containerRef.current?.offsetWidth, // Re-run if container width changes
+    containerRef.current?.offsetHeight, // Re-run if container height changes
+    updateRenderData, // If updateRenderData's dependencies change, this effect will re-run
+    currentMinBallRadius, // If responsive radius changes, re-setup
+    currentMaxBallRadius, // If responsive radius changes, re-setup
+    currentFontSize, // If responsive font size changes, re-setup
+  ]);
 
-  // Function to generate a random HSL color string
   const getRandomHslColor = useCallback(() => {
-    const h = Math.floor(Math.random() * 360); // Hue: 0-359
-    const s = Math.floor(Math.random() * 30) + 70; // Saturation: 70-100%
-    const l = Math.floor(Math.random() * 20) + 60; // Lightness: 60-80%
+    const h = Math.floor(Math.random() * 360);
+    const s = Math.floor(Math.random() * 30) + 70;
+    const l = Math.floor(Math.random() * 20) + 60;
     return `hsl(${h}, ${s}%, ${l}%)`;
   }, []);
 
@@ -292,7 +347,7 @@ export default function SkillsSection() {
   const handleHoverEnd = (skill: string) => {
     setHoverColors((prevColors) => {
       const newColors = { ...prevColors };
-      delete newColors[skill]; // Remove the color for this skill on hover end
+      delete newColors[skill];
       return newColors;
     });
   };
@@ -314,13 +369,13 @@ export default function SkillsSection() {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke-width="1.5"
+                strokeWidth="1.5"
                 stroke="#9EFFFF"
                 className="size-4"
               >
                 <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"
                 />
               </svg>
@@ -344,21 +399,21 @@ export default function SkillsSection() {
         <Reveal delay={0.4}>
           <div className="flex flex-wrap gap-3">
             {skills.map((skill) => (
-              <motion.div // Use motion.div here
+              <motion.div
                 key={skill}
                 className="px-4 py-2 rounded-lg border text-sm text-center font-medium shadow-sm cursor-pointer"
                 onHoverStart={() => handleHoverStart(skill)}
                 onHoverEnd={() => handleHoverEnd(skill)}
                 initial={{
-                  backgroundColor: "rgba(255,255,255,0.05)", // bg-white/5
-                  borderColor: "rgba(255,255,255,0.1)", // border-white/10
-                  color: "#ffffff", // text-white
+                  backgroundColor: "rgba(255,255,255,0.05)",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  color: "#ffffff",
                 }}
                 animate={{
                   backgroundColor:
                     hoverColors[skill] || "rgba(255,255,255,0.05)",
                   borderColor: hoverColors[skill] || "rgba(255,255,255,0.1)",
-                  color: hoverColors[skill] ? "#000000" : "#ffffff", // Black text on hover color, white otherwise
+                  color: hoverColors[skill] ? "#000000" : "#ffffff",
                 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
               >
@@ -400,7 +455,7 @@ export default function SkillsSection() {
                 width: `${radius * 2}px`,
                 height: `${radius * 2}px`,
                 color: textColor,
-                fontSize,
+                fontSize: currentFontSize,
                 transform: `translate(${x}px, ${y}px) translate(-50%, -50%)`,
                 pointerEvents: "none",
                 zIndex: 2,

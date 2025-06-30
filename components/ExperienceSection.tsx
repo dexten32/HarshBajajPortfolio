@@ -15,7 +15,7 @@ export default function ExperienceSection() {
       className="w-full px-4 py-16 bg-[#0D0D0D] text-white flex justify-center"
     >
       <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-[1fr_1.2fr] md:gap-[9rem] gap-10">
-        {/* LEFT SECTION */}
+        {/* LEFT SECTION (No changes here, previous fixes for heading are maintained) */}
         <div className="flex flex-col justify-center space-y-4 pr-2 md:pr-4">
           <Reveal delay={0}>
             <div className="flex items-center text-base text-gray-400 gap-2">
@@ -43,7 +43,7 @@ export default function ExperienceSection() {
 
           <RevealSplitText
             text="Where I’ve Built Things That Matter"
-            className="text-3xl md:text-4xl font-bold"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold"
           />
 
           <Reveal delay={0.2}>
@@ -64,7 +64,10 @@ export default function ExperienceSection() {
                 onClick={() => setExpanded(!expanded)}
                 className="w-full text-left focus:outline-none"
               >
-                <div className="flex justify-between items-start pb-4">
+                {/* === MODIFICATION START HERE === */}
+                {/* Change parent div to flex-col on mobile, flex-row on sm and up */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start pb-4">
+                  {/* Left part: Image, Company Name, and Role */}
                   <div className="flex items-center gap-4">
                     <Image
                       src="/files/cynox logo.svg"
@@ -75,20 +78,24 @@ export default function ExperienceSection() {
                     />
                     <div className="flex flex-col">
                       <a href="https://cynoxsecurity.com/" target="_blank">
-                        <h3 className="font-semibold text-lg">
+                        {/* Company Name: whitespace-nowrap kept from previous fix */}
+                        <h3 className="font-semibold text-lg whitespace-nowrap">
                           Cynox Security LLP
                         </h3>
                       </a>
                       <p className="text-sm text-gray-400">Web Developer</p>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-400 whitespace-nowrap">
+                  {/* Time: On mobile, it will be on a new line and text-right. 
+                      On sm and up, it will be in the same row, left-aligned with ml-auto to push right, and no top margin. */}
+                  <p className="text-sm text-gray-400 whitespace-nowrap text-right mt-2 sm:text-left sm:mt-0 sm:ml-auto">
                     Apr 2025 – Present
                   </p>
                 </div>
+                {/* === MODIFICATION END HERE === */}
               </button>
 
-              {/* Expandable Content */}
+              {/* Expandable Content (no changes) */}
               <div
                 className={`transition-all duration-300 ease-in-out overflow-hidden mb-4 ${
                   expanded ? "max-h-60 mt-4" : "max-h-0"
