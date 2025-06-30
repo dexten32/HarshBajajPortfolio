@@ -77,11 +77,16 @@ export default function SkillsSection() {
   const currentSkillsIndex = useRef(0);
   const spawnIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
 
-  // State to manage hover color for each skill item
-  const [hoverColors, setHoverColors] = useState<{ [key: string]: string }>({});
+  // State to manage hover/tap color for each skill item
+  const [activeColors, setActiveColors] = useState<{ [key: string]: string }>(
+    {}
+  ); // Renamed from hoverColors for clarity
 
   // State to track if we are on a mobile breakpoint
   const [isMobileBreakpoint, setIsMobileBreakpoint] = useState(false);
+
+  // State: Track if the section is in view
+  const [isInView, setIsInView] = useState(false);
 
   // Define responsive radius values
   const mobileMinBallRadius = 30; // Smaller radius for mobile
@@ -135,20 +140,39 @@ export default function SkillsSection() {
     checkBreakpoint(); // Initial check on mount
     window.addEventListener("resize", checkBreakpoint);
     return () => window.removeEventListener("resize", checkBreakpoint);
-  }, []); // Empty dependency array ensures this runs once and cleans up on unmount
+  }, []);
+
+  // Intersection Observer to detect when the section is in view
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsInView(entry.isIntersecting);
+        });
+      },
+      {
+        threshold: 0.5,
+      }
+    );
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, []);
 
   // Main Matter.js initialization and simulation useEffect
   useEffect(() => {
-    // Only proceed if both container and canvas refs are available
-    if (!containerRef.current || !canvasRef.current) {
-      // console.log("Matter.js setup skipped: Refs not ready.");
+    if (!containerRef.current || !canvasRef.current || !isInView) {
       return;
     }
 
-    // --- CLEANUP OF PREVIOUS INSTANCE (if any) ---
-    // This runs on component unmount or when dependencies change, ensuring a clean reset.
     const cleanupMatter = () => {
-      // console.log("Cleaning up Matter.js...");
       if (spawnIntervalIdRef.current) {
         clearInterval(spawnIntervalIdRef.current);
         spawnIntervalIdRef.current = null;
@@ -168,16 +192,12 @@ export default function SkillsSection() {
         engineRef.current = null;
       }
       matterBodiesRef.current = [];
-      setBallRenderData([]); // Clear displayed balls
-      currentSkillsIndex.current = 0; // Reset skill index for new spawn
-      // console.log("Matter.js cleanup complete.");
+      setBallRenderData([]);
+      currentSkillsIndex.current = 0;
     };
 
-    // Perform cleanup before setting up a new instance
-    cleanupMatter(); // Call cleanup directly here before setting up
+    cleanupMatter();
 
-    // --- MATTER.JS SETUP ---
-    // console.log("Setting up Matter.js...");
     const width = containerRef.current.offsetWidth;
     const height = containerRef.current.offsetHeight;
 
@@ -216,7 +236,7 @@ export default function SkillsSection() {
     });
     World.add(engine.world, mouseConstraint);
 
-    const boundaryThickness = 100; // Thickness of the invisible boundary walls
+    const boundaryThickness = 100;
     const boundaryOptions = {
       isStatic: true,
       restitution: 0.8,
@@ -229,36 +249,31 @@ export default function SkillsSection() {
       },
     };
 
-    // Define boundaries based on container size
     const boundaries = [
-      // Bottom Boundary (slightly below the visible container to catch balls)
       Bodies.rectangle(
         width / 2,
-        height + boundaryThickness / 2, // Center of boundary is just below container bottom
+        height + boundaryThickness / 2,
         width,
         boundaryThickness,
         boundaryOptions
       ),
-      // Left Boundary
       Bodies.rectangle(
-        -(boundaryThickness / 2), // Center of boundary is just left of container left
+        -(boundaryThickness / 2),
         height / 2,
         boundaryThickness,
         height,
         boundaryOptions
       ),
-      // Right Boundary
       Bodies.rectangle(
-        width + boundaryThickness / 2, // Center of boundary is just right of container right
+        width + boundaryThickness / 2,
         height / 2,
         boundaryThickness,
         height,
         boundaryOptions
       ),
-      // Top Boundary (slightly above the visible container)
       Bodies.rectangle(
         width / 2,
-        -(boundaryThickness / 2), // Center of boundary is just above container top
+        -(boundaryThickness / 2),
         width,
         boundaryThickness,
         boundaryOptions
@@ -277,12 +292,11 @@ export default function SkillsSection() {
         `${currentFontSize} sans-serif`
       );
 
-      // Use the dynamically calculated min/max radii
       const radius = Math.max(
         currentMinBallRadius,
         Math.min(currentMaxBallRadius, estimatedTextWidth / 2 + 20)
       );
-      const x = Math.random() * (width - radius * 2) + radius; // Spawn within visible width
+      const x = Math.random() * (width - radius * 2) + radius;
       const y = -spawnHeightAboveContainer;
 
       const ball = Bodies.circle(x, y, radius, {
@@ -291,7 +305,7 @@ export default function SkillsSection() {
         label: skill,
         render: { visible: wireframes },
       }) as CustomMatterBody;
-      ball.originalProps = { label: skill, radius }; // Store the actual physics radius
+      ball.originalProps = { label: skill, radius };
       Matter.Body.setVelocity(ball, {
         x: (Math.random() - 0.5) * 3,
         y: Math.random() * 2,
@@ -301,7 +315,6 @@ export default function SkillsSection() {
       currentSkillsIndex.current++;
     };
 
-    // Start spawning balls after a short delay for initial setup
     spawnIntervalIdRef.current = setInterval(() => {
       if (currentSkillsIndex.current >= skills.length) {
         if (spawnIntervalIdRef.current)
@@ -311,22 +324,19 @@ export default function SkillsSection() {
       addBall();
     }, 200);
 
-    // Attach event listener for updating render data
     Events.on(engine, "afterUpdate", updateRenderData);
-    // console.log("Matter.js setup complete.");
 
-    // Cleanup function: This is essential for component unmount
     return () => {
       cleanupMatter();
     };
   }, [
-    // Dependencies that cause the Matter.js simulation to re-setup
-    containerRef.current?.offsetWidth, // Re-run if container width changes
-    containerRef.current?.offsetHeight, // Re-run if container height changes
-    updateRenderData, // If updateRenderData's dependencies change, this effect will re-run
-    currentMinBallRadius, // If responsive radius changes, re-setup
-    currentMaxBallRadius, // If responsive radius changes, re-setup
-    currentFontSize, // If responsive font size changes, re-setup
+    containerRef.current?.offsetWidth,
+    containerRef.current?.offsetHeight,
+    updateRenderData,
+    currentMinBallRadius,
+    currentMaxBallRadius,
+    currentFontSize,
+    isInView,
   ]);
 
   const getRandomHslColor = useCallback(() => {
@@ -336,15 +346,17 @@ export default function SkillsSection() {
     return `hsl(${h}, ${s}%, ${l}%)`;
   }, []);
 
-  const handleHoverStart = (skill: string) => {
-    setHoverColors((prevColors) => ({
+  // Updated handler to be general for both hover and touch
+  const handleActivateSkill = (skill: string) => {
+    setActiveColors((prevColors) => ({
       ...prevColors,
       [skill]: getRandomHslColor(),
     }));
   };
 
-  const handleHoverEnd = (skill: string) => {
-    setHoverColors((prevColors) => {
+  // Updated handler to be general for both hover and touch
+  const handleDeactivateSkill = (skill: string) => {
+    setActiveColors((prevColors) => {
       const newColors = { ...prevColors };
       delete newColors[skill];
       return newColors;
@@ -400,9 +412,14 @@ export default function SkillsSection() {
             {skills.map((skill) => (
               <motion.div
                 key={skill}
-                className="px-4 py-2 rounded-lg border text-sm text-center font-medium shadow-sm cursor-pointer"
-                onHoverStart={() => handleHoverStart(skill)}
-                onHoverEnd={() => handleHoverEnd(skill)}
+                className="px-4 py-2 rounded-lg border text-sm text-center font-medium shadow-sm cursor-pointer select-none"
+                // Desktop Hover Events
+                onHoverStart={() => handleActivateSkill(skill)}
+                onHoverEnd={() => handleDeactivateSkill(skill)}
+                // Mobile Touch Events
+                onTouchStart={() => handleActivateSkill(skill)}
+                onTouchEnd={() => handleDeactivateSkill(skill)}
+                // Use activeColors state
                 initial={{
                   backgroundColor: "rgba(255,255,255,0.05)",
                   borderColor: "rgba(255,255,255,0.1)",
@@ -410,9 +427,9 @@ export default function SkillsSection() {
                 }}
                 animate={{
                   backgroundColor:
-                    hoverColors[skill] || "rgba(255,255,255,0.05)",
-                  borderColor: hoverColors[skill] || "rgba(255,255,255,0.1)",
-                  color: hoverColors[skill] ? "#000000" : "#ffffff",
+                    activeColors[skill] || "rgba(255,255,255,0.05)",
+                  borderColor: activeColors[skill] || "rgba(255,255,255,0.1)",
+                  color: activeColors[skill] ? "#000000" : "#ffffff",
                 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
               >

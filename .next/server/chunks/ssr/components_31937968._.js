@@ -146,9 +146,9 @@ function ContactSection() {
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$RevealSplitText$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
-                            text: "Let’s create the next big idea" // Changed to regular space
+                            text: "Let's talk ideas." // Changed to regular space
                             ,
-                            className: "text-2xl uppercase md:text-5xl font-extrabold text-white text-center max-w-lg sm:max-w-xl md:max-w-4xl"
+                            className: "text-xl uppercase md:text-5xl font-extrabold  text-white text-center max-w-lg sm:max-w-xl md:max-w-4xl"
                         }, void 0, false, {
                             fileName: "[project]/components/ContactSection.tsx",
                             lineNumber: 23,
@@ -1454,10 +1454,12 @@ function SkillsSection() {
     const matterBodiesRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])([]);
     const currentSkillsIndex = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(0);
     const spawnIntervalIdRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
-    // State to manage hover color for each skill item
-    const [hoverColors, setHoverColors] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])({});
+    // State to manage hover/tap color for each skill item
+    const [activeColors, setActiveColors] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])({}); // Renamed from hoverColors for clarity
     // State to track if we are on a mobile breakpoint
     const [isMobileBreakpoint, setIsMobileBreakpoint] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
+    // State: Track if the section is in view
+    const [isInView, setIsInView] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     // Define responsive radius values
     const mobileMinBallRadius = 30; // Smaller radius for mobile
     const mobileMaxBallRadius = 50; // Smaller radius for mobile
@@ -1499,18 +1501,30 @@ function SkillsSection() {
         checkBreakpoint(); // Initial check on mount
         window.addEventListener("resize", checkBreakpoint);
         return ()=>window.removeEventListener("resize", checkBreakpoint);
-    }, []); // Empty dependency array ensures this runs once and cleans up on unmount
+    }, []);
+    // Intersection Observer to detect when the section is in view
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        if (!containerRef.current) return;
+        const observer = new IntersectionObserver((entries)=>{
+            entries.forEach((entry)=>{
+                setIsInView(entry.isIntersecting);
+            });
+        }, {
+            threshold: 0.5
+        });
+        observer.observe(containerRef.current);
+        return ()=>{
+            if (containerRef.current) {
+                observer.unobserve(containerRef.current);
+            }
+        };
+    }, []);
     // Main Matter.js initialization and simulation useEffect
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        // Only proceed if both container and canvas refs are available
-        if (!containerRef.current || !canvasRef.current) {
-            // console.log("Matter.js setup skipped: Refs not ready.");
+        if (!containerRef.current || !canvasRef.current || !isInView) {
             return;
         }
-        // --- CLEANUP OF PREVIOUS INSTANCE (if any) ---
-        // This runs on component unmount or when dependencies change, ensuring a clean reset.
         const cleanupMatter = ()=>{
-            // console.log("Cleaning up Matter.js...");
             if (spawnIntervalIdRef.current) {
                 clearInterval(spawnIntervalIdRef.current);
                 spawnIntervalIdRef.current = null;
@@ -1530,14 +1544,10 @@ function SkillsSection() {
                 engineRef.current = null;
             }
             matterBodiesRef.current = [];
-            setBallRenderData([]); // Clear displayed balls
-            currentSkillsIndex.current = 0; // Reset skill index for new spawn
-        // console.log("Matter.js cleanup complete.");
+            setBallRenderData([]);
+            currentSkillsIndex.current = 0;
         };
-        // Perform cleanup before setting up a new instance
-        cleanupMatter(); // Call cleanup directly here before setting up
-        // --- MATTER.JS SETUP ---
-        // console.log("Setting up Matter.js...");
+        cleanupMatter();
         const width = containerRef.current.offsetWidth;
         const height = containerRef.current.offsetHeight;
         const engine = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Engine"].create();
@@ -1573,7 +1583,7 @@ function SkillsSection() {
             }
         });
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["World"].add(engine.world, mouseConstraint);
-        const boundaryThickness = 100; // Thickness of the invisible boundary walls
+        const boundaryThickness = 100;
         const boundaryOptions = {
             isStatic: true,
             restitution: 0.8,
@@ -1585,15 +1595,10 @@ function SkillsSection() {
                 visible: wireframes
             }
         };
-        // Define boundaries based on container size
         const boundaries = [
-            // Bottom Boundary (slightly below the visible container to catch balls)
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Bodies"].rectangle(width / 2, height + boundaryThickness / 2, width, boundaryThickness, boundaryOptions),
-            // Left Boundary
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Bodies"].rectangle(-(boundaryThickness / 2), height / 2, boundaryThickness, height, boundaryOptions),
-            // Right Boundary
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Bodies"].rectangle(width + boundaryThickness / 2, height / 2, boundaryThickness, height, boundaryOptions),
-            // Top Boundary (slightly above the visible container)
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Bodies"].rectangle(width / 2, -(boundaryThickness / 2), width, boundaryThickness, boundaryOptions)
         ];
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["World"].add(engine.world, boundaries);
@@ -1602,9 +1607,8 @@ function SkillsSection() {
             if (currentSkillsIndex.current >= skills.length) return;
             const skill = skills[currentSkillsIndex.current];
             const estimatedTextWidth = getTextWidth(skill, `${currentFontSize} sans-serif`);
-            // Use the dynamically calculated min/max radii
             const radius = Math.max(currentMinBallRadius, Math.min(currentMaxBallRadius, estimatedTextWidth / 2 + 20));
-            const x = Math.random() * (width - radius * 2) + radius; // Spawn within visible width
+            const x = Math.random() * (width - radius * 2) + radius;
             const y = -spawnHeightAboveContainer;
             const ball = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Bodies"].circle(x, y, radius, {
                 restitution: 0.8,
@@ -1617,7 +1621,7 @@ function SkillsSection() {
             ball.originalProps = {
                 label: skill,
                 radius
-            }; // Store the actual physics radius
+            };
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].Body.setVelocity(ball, {
                 x: (Math.random() - 0.5) * 3,
                 y: Math.random() * 2
@@ -1626,7 +1630,6 @@ function SkillsSection() {
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["World"].add(engine.world, ball);
             currentSkillsIndex.current++;
         };
-        // Start spawning balls after a short delay for initial setup
         spawnIntervalIdRef.current = setInterval(()=>{
             if (currentSkillsIndex.current >= skills.length) {
                 if (spawnIntervalIdRef.current) clearInterval(spawnIntervalIdRef.current);
@@ -1634,21 +1637,18 @@ function SkillsSection() {
             }
             addBall();
         }, 200);
-        // Attach event listener for updating render data
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$matter$2d$js$2f$build$2f$matter$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Events"].on(engine, "afterUpdate", updateRenderData);
-        // console.log("Matter.js setup complete.");
-        // Cleanup function: This is essential for component unmount
         return ()=>{
             cleanupMatter();
         };
     }, [
-        // Dependencies that cause the Matter.js simulation to re-setup
         containerRef.current?.offsetWidth,
         containerRef.current?.offsetHeight,
         updateRenderData,
         currentMinBallRadius,
         currentMaxBallRadius,
-        currentFontSize
+        currentFontSize,
+        isInView
     ]);
     const getRandomHslColor = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(()=>{
         const h = Math.floor(Math.random() * 360);
@@ -1656,14 +1656,16 @@ function SkillsSection() {
         const l = Math.floor(Math.random() * 20) + 60;
         return `hsl(${h}, ${s}%, ${l}%)`;
     }, []);
-    const handleHoverStart = (skill)=>{
-        setHoverColors((prevColors)=>({
+    // Updated handler to be general for both hover and touch
+    const handleActivateSkill = (skill)=>{
+        setActiveColors((prevColors)=>({
                 ...prevColors,
                 [skill]: getRandomHslColor()
             }));
     };
-    const handleHoverEnd = (skill)=>{
-        setHoverColors((prevColors)=>{
+    // Updated handler to be general for both hover and touch
+    const handleDeactivateSkill = (skill)=>{
+        setActiveColors((prevColors)=>{
             const newColors = {
                 ...prevColors
             };
@@ -1704,29 +1706,29 @@ function SkillsSection() {
                                             d: "M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"
                                         }, void 0, false, {
                                             fileName: "[project]/components/SkillsSection.tsx",
-                                            lineNumber: 375,
+                                            lineNumber: 387,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/SkillsSection.tsx",
-                                        lineNumber: 367,
+                                        lineNumber: 379,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/SkillsSection.tsx",
-                                    lineNumber: 366,
+                                    lineNumber: 378,
                                     columnNumber: 13
                                 }, this),
                                 "What I’ve Learned"
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/SkillsSection.tsx",
-                            lineNumber: 362,
+                            lineNumber: 374,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/SkillsSection.tsx",
-                        lineNumber: 361,
+                        lineNumber: 373,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$RevealSplitText$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -1734,7 +1736,7 @@ function SkillsSection() {
                         className: "text-4xl md:text-5xl font-extrabold text-white"
                     }, void 0, false, {
                         fileName: "[project]/components/SkillsSection.tsx",
-                        lineNumber: 386,
+                        lineNumber: 398,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$Reveal$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -1744,12 +1746,12 @@ function SkillsSection() {
                             children: "Here's a visual and listed representation of technologies I'm experienced in:"
                         }, void 0, false, {
                             fileName: "[project]/components/SkillsSection.tsx",
-                            lineNumber: 392,
+                            lineNumber: 404,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/SkillsSection.tsx",
-                        lineNumber: 391,
+                        lineNumber: 403,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$Reveal$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -1757,18 +1759,23 @@ function SkillsSection() {
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex flex-wrap gap-3",
                             children: skills.map((skill)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["motion"].div, {
-                                    className: "px-4 py-2 rounded-lg border text-sm text-center font-medium shadow-sm cursor-pointer",
-                                    onHoverStart: ()=>handleHoverStart(skill),
-                                    onHoverEnd: ()=>handleHoverEnd(skill),
+                                    className: "px-4 py-2 rounded-lg border text-sm text-center font-medium shadow-sm cursor-pointer select-none",
+                                    // Desktop Hover Events
+                                    onHoverStart: ()=>handleActivateSkill(skill),
+                                    onHoverEnd: ()=>handleDeactivateSkill(skill),
+                                    // Mobile Touch Events
+                                    onTouchStart: ()=>handleActivateSkill(skill),
+                                    onTouchEnd: ()=>handleDeactivateSkill(skill),
+                                    // Use activeColors state
                                     initial: {
                                         backgroundColor: "rgba(255,255,255,0.05)",
                                         borderColor: "rgba(255,255,255,0.1)",
                                         color: "#ffffff"
                                     },
                                     animate: {
-                                        backgroundColor: hoverColors[skill] || "rgba(255,255,255,0.05)",
-                                        borderColor: hoverColors[skill] || "rgba(255,255,255,0.1)",
-                                        color: hoverColors[skill] ? "#000000" : "#ffffff"
+                                        backgroundColor: activeColors[skill] || "rgba(255,255,255,0.05)",
+                                        borderColor: activeColors[skill] || "rgba(255,255,255,0.1)",
+                                        color: activeColors[skill] ? "#000000" : "#ffffff"
                                     },
                                     transition: {
                                         duration: 0.3,
@@ -1777,23 +1784,23 @@ function SkillsSection() {
                                     children: skill
                                 }, skill, false, {
                                     fileName: "[project]/components/SkillsSection.tsx",
-                                    lineNumber: 401,
+                                    lineNumber: 413,
                                     columnNumber: 15
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/components/SkillsSection.tsx",
-                            lineNumber: 399,
+                            lineNumber: 411,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/SkillsSection.tsx",
-                        lineNumber: 398,
+                        lineNumber: 410,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/SkillsSection.tsx",
-                lineNumber: 360,
+                lineNumber: 372,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1812,12 +1819,12 @@ function SkillsSection() {
                                 children: "SKILLS"
                             }, void 0, false, {
                                 fileName: "[project]/components/SkillsSection.tsx",
-                                lineNumber: 434,
+                                lineNumber: 451,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/SkillsSection.tsx",
-                            lineNumber: 433,
+                            lineNumber: 450,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("canvas", {
@@ -1825,7 +1832,7 @@ function SkillsSection() {
                             className: "absolute top-0 left-0 w-full h-full pointer-events-none"
                         }, void 0, false, {
                             fileName: "[project]/components/SkillsSection.tsx",
-                            lineNumber: 443,
+                            lineNumber: 460,
                             columnNumber: 11
                         }, this),
                         ballRenderData.map(({ id, label, x, y, radius })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1851,24 +1858,24 @@ function SkillsSection() {
                                 children: label
                             }, id, false, {
                                 fileName: "[project]/components/SkillsSection.tsx",
-                                lineNumber: 450,
+                                lineNumber: 467,
                                 columnNumber: 13
                             }, this))
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/SkillsSection.tsx",
-                    lineNumber: 428,
+                    lineNumber: 445,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/SkillsSection.tsx",
-                lineNumber: 427,
+                lineNumber: 444,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/SkillsSection.tsx",
-        lineNumber: 355,
+        lineNumber: 367,
         columnNumber: 5
     }, this);
 }

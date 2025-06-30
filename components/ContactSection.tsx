@@ -21,8 +21,8 @@ export default function ContactSection() {
 
           {/* Heading */}
           <RevealSplitText
-            text="Let’s create the next big idea" // Changed to regular space
-            className="text-2xl uppercase md:text-5xl font-extrabold text-white text-center max-w-lg sm:max-w-xl md:max-w-4xl"
+            text="Let's talk ideas." // Changed to regular space
+            className="text-xl uppercase md:text-5xl font-extrabold  text-white text-center max-w-lg sm:max-w-xl md:max-w-4xl"
           />
 
           {/* CTA Button */}
